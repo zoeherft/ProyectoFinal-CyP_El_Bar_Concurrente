@@ -17,3 +17,123 @@ c) El número de clientes, baristas y meseros es variable, por ejemplo: 5 client
      El tiempo de preparación de las bebidas se puede simular con sleeps
      El tamaño de los buffers/colas y de los pedidos debe ser limitado para saber cuando estan llenos o vacíos;  por ejemplo: 60 pedidos, 
      un buffer circular de tamaño 8 para los pedidos almacenados, un buffer de tamaño 8 para los pedidos procesados*/
+
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <string>
+#include <cstdlib> // para rand() y srand()
+#include <ctime>   // para time()
+
+using namespace std;
+
+class bebidas
+{
+public:
+    string nombre; //nombre de la bebida
+    int cliente, borrado; //borrado=0 indica que el elemento no ha sido borrado y 1 indica que si y por ende se puede sobreescribir (poner otro pedido)
+public:
+    bebidas();
+    {
+        this->cliente = -1;
+        this->nombre = "No Asignado";
+        this->borrado = 1;
+    }
+
+    asigCont(int cliente) //Abreviacion de asiganar contenido
+    {
+        this->cliente=cliente;
+        this->borrado=0;
+
+        srand(time(NULL));
+        int aleatorio = rand() % 5;
+        switch (aleatorio) //Se eligirá el nombre de la bebida de forma aleatoria
+        {
+        case 0:
+            this->nombre="Cuba";
+            break;
+        
+        case 1:
+            this->nombre="Paloma";
+            break;
+
+        case 2:
+            this->nombre="Piña Colada";
+            break;
+
+        case 3:
+            this->nombre="Mojito";
+            break;
+
+        case 4:
+            this->nombre="Margarita";
+            break;
+
+        case 5:
+            this->nombre="Manhattan";
+            break;
+
+        default:
+            printf("Considera poner un puesto de tacos");
+            exit();
+            break;
+        }
+    }
+};
+
+class colaCircular
+public:
+    array<bebidas,8> pedidos;
+    int inicio, fin;
+    bool vacia, llena;
+    mutex candado;
+    condition_variable vc;
+public:
+    colaCircular()
+    {
+        int i;
+        inicio = 0;
+        fin = 0;
+        for(i=0; i<8; i++)
+        {
+            pedidos[i]->bebidas();
+        }
+        vacia = true;
+        llena = false;
+    }
+
+    esVacia()
+    {
+        for(int i=0; i<8; i++)
+        {
+            if(pedidos[i]->borrado==0)
+            {
+                vacia=false;
+                break;
+            }
+        }
+        vacia=true;
+    }
+
+    agregarPedido(int cliente)
+    {
+
+        if(fin=8)
+        bebidas[fin]->asigCont(cliente);
+    }
+
+    eliminarPedido();
+    {
+        unique_lock<mutex> lk(candado)
+        pedidos[inicio]->borrado=1;
+        if(inicio=7)
+        {
+            inicio=0;
+        }
+        else
+        {
+            inicio++;
+        lk.unlock();
+    }
+};
