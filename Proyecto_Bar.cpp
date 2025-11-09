@@ -34,14 +34,14 @@ public:
     string nombre; //nombre de la bebida
     int cliente, borrado; //borrado=0 indica que el elemento no ha sido borrado y 1 indica que si y por ende se puede sobreescribir (poner otro pedido)
 public:
-    bebidas();
+    bebidas() //La bebidas se inicializarán borradas
     {
         this->cliente = -1;
         this->nombre = "No Asignado";
         this->borrado = 1;
     }
 
-    asigCont(int cliente) //Abreviacion de asiganar contenido
+    asigCont(int cliente) //Abreviacion de asignar contenido
     {
         this->cliente=cliente;
         this->borrado=0;
@@ -83,6 +83,7 @@ public:
 };
 
 class colaCircular
+{
 public:
     array<bebidas,8> pedidos;
     int inicio, fin;
@@ -93,8 +94,8 @@ public:
     colaCircular()
     {
         int i;
-        inicio = 0;
-        fin = 0;
+        inicio = 0; //Estara en la posicion en la cual la cola empieza a tener elementos
+        fin = 0; //Estara en la ultima posicion en la que la cola termina de tener elementos 
         for(i=0; i<8; i++)
         {
             pedidos[i]->bebidas();
@@ -103,7 +104,7 @@ public:
         llena = false;
     }
 
-    esVacia()
+    esVacia() //Si esta vacia la cola tendra el valor de verdadero
     {
         for(int i=0; i<8; i++)
         {
@@ -116,24 +117,60 @@ public:
         vacia=true;
     }
 
-    agregarPedido(int cliente)
+    esLlena() //Si esta llena la cola tendra el valor de verdadero
     {
-
-        if(fin=8)
-        bebidas[fin]->asigCont(cliente);
+        for(int i=0; i<8; i++)
+        {
+            if(pedidos[i]->borrado==1)
+            {
+                llena=false;
+                break;
+            }
+        }
+        llena=true;
     }
 
-    eliminarPedido();
+    agregarPedido(int cliente)
+    {
+        unique_lock<mutex> lk(candado);
+        while (llena) //Si la cola esta llena espera a que deje de estarlo
+        {
+            vc.wait(lk);
+            esLlena();
+        }
+        if(fin==7)
+        {
+            fin=0;
+        }
+        else
+        {
+            fin++;
+        }
+        bebidas[fin]->asigCont(cliente);
+        vc.notify_all();
+        lk.unlock();
+    }
+
+    eliminarPedido()
     {
         unique_lock<mutex> lk(candado)
-        pedidos[inicio]->borrado=1;
-        if(inicio=7)
+        while (vacia) //Si la cola esta vacia espera a que deje de estarlo
+        {
+            vc.wait(lk);
+            vc.esVacia();
+        }
+        if(inicio==7)
         {
             inicio=0;
         }
         else
         {
             inicio++;
+        }
+        bebidas[inicio]->borrado=1;
+        vc.notify_all();
         lk.unlock();
     }
 };
+
+//Se va a requerir una funcion tomarPedido pero en la clase barista
