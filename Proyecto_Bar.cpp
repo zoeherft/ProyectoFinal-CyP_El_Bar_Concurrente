@@ -28,6 +28,9 @@ c) El número de clientes, baristas y meseros es variable, por ejemplo: 5 client
 
 using namespace std;
 
+mutex candado;
+condition_variable vc;
+
 class bebidas
 {
 public:
@@ -88,8 +91,6 @@ public:
     array<bebidas,8> pedidos;
     int inicio, fin;
     bool vacia, llena;
-    mutex candado;
-    condition_variable vc;
 public:
     colaCircular()
     {
